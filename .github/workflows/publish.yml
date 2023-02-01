@@ -1,4 +1,4 @@
-name: Publish Markdown to Medium
+name: Publish to Medium
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  MEDIUM_INTEGRATION_TOKEN: ${{ secrets.MEDIUM_INTEGRATION_TOKEN }}
+  MEDIUM_API_KEY: ${{ secrets.MEDIUM_INTEGRATION_TOKEN }}
 
 jobs:
   publish:
@@ -16,30 +16,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Install pandoc
-      run: apk add --no-cache pandoc
+    - name: Setup Docker
+      uses: docker://pandoc/core:2.11
 
-    - name: Convert Markdown to HTML
-      run: pandoc --from=markdown --to=html file.md -o file.html
-
-#     - name: Publish to Medium
-#       uses: medium/actions/publish@v1
-#       with:
-#         integrationToken: ${{ env.MEDIUM_INTEGRATION_TOKEN }}
-#         title: "My New Story"
-#         contentFormat: html
-#         content: ${{ steps.convert.outputs.html }}
-#         tags: "github, medium, markdown"
-#         canonicalUrl: "https://github.com/<OWNER>/<REPO>/blob/<BRANCH>/file.md"
-#         publishStatus: draft
-        
-    - name: Publish to Medium
-      env:
-        MEDIUM_INTEGRATION_TOKEN: ${{ secrets.MEDIUM_INTEGRATION_TOKEN }}
+    - name: Convert markdown to HTML
       run: |
-        apk add --no-cache curl
-        curl -X POST https://api.medium.com/v1/posts \
-             -H "Authorization: Bearer $MEDIUM_INTEGRATION_TOKEN" \
-             -H "Content-Type: application/json" \
-             -d "{\"title\":\"My Medium Story\",\"contentFormat\":\"html\",\"content\":\"$(cat file.html)\",\"publishStatus\":\"draft\"}"
-        
+        pandoc input.md -f markdown -t html -s -o output.html
+
+    - name: Publish to Medium
+      run: |
+        curl -X POST \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $MEDIUM_INTEGRATION_TOKEN" \
+        -d "{\"title\":\"My blog post\",\"contentFormat\":\"html\",\"content\":\"$(cat output.html)\",\"publishStatus\":\"public\"}" \
+        https://api.medium.com/v1/posts
