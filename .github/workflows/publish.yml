@@ -1,0 +1,30 @@
+name: Publish Medium Story
+
+on:
+  push:
+    paths:
+      - '*.md'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Convert Markdown to HTML
+      uses: actions/bin/filter@v1
+      with:
+        args: pandoc --from=markdown --to=html
+
+    - name: Publish to Medium
+      uses: docker://python:3.8-alpine
+      env:
+        MEDIUM_INTEGRATION_TOKEN: ${{ secrets.MEDIUM_INTEGRATION_TOKEN }}
+      run: |
+        apk add --no-cache curl
+        curl -X POST https://api.medium.com/v1/posts \
+             -H "Authorization: Bearer $MEDIUM_INTEGRATION_TOKEN" \
+             -H "Content-Type: application/json" \
+             -d "{\"title\":\"My Medium Story\",\"contentFormat\":\"html\",\"content\":\"$(cat file.html)\",\"publishStatus\":\"draft\"}"
