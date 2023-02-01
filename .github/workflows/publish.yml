@@ -19,6 +19,13 @@ jobs:
     - name: Setup Docker
       uses: docker://pandoc/core:2.11
 
+    - name: Delay
+      run: sleep 90
+
+    - name: Check if Pandoc is available
+      run: pandoc --version
+      shell: bash
+
     - name: Convert markdown to HTML
       run: |
         pandoc input.md -f markdown -t html -s -o output.html
